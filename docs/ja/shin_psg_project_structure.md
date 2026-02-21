@@ -122,7 +122,7 @@ Z80アセンブラを使用し、サブセット実装を行う対象。ビル�
 
 - 各機種ディレクトリの `Makefile` から呼び出す
 - `retro/z80/core/` は各機種からINCLUDEディレクティブで参照する（アセンブル単位は各機種ごと）
-- 詳細は [RETRO_GUIDE.md](shin_psg_retro_guide_v0.1.md) を参照
+- 詳細は [shin_psg_retro_guide.md](shin_psg_retro_guide.md) を参照
 
 ---
 

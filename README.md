@@ -96,12 +96,12 @@ PSG・FM・PCMといった電子音源を用いた音楽において、作曲家
 | ファイル | 内容 |
 |---|---|
 | `docs/ja/shin_psg_spec.md` | 仕様書 — 概念・演奏モード・パラメータ一覧 |
-| `docs/ja/shin_psg_feel_engine_v0.2.md` | 感情エンジン テクニカルドキュメント — Stage 1〜6の処理フロー・演奏癖パラメータ |
-| `docs/ja/shin_psg_architecture_v0.1.md` | アーキテクチャドキュメント — 抽象化・継承・音源別実装 |
-| `docs/ja/shin_psg_roadmap_v0.1.md` | 実装ロードマップ — Phase 1〜8・マイルストン・技術スタック候補 |
-| `docs/ja/shin_psg_glossary_v0.1.md` | 用語辞典 — 日英対訳・定義一覧 |
-| `docs/ja/shin_psg_project_structure_v0.1.md` | プロジェクト構造ガイド — ディレクトリ構成・ビルドシステム・ブランチ戦略 |
-| `docs/ja/shin_psg_retro_guide_v0.1.md` | レトロプラットフォーム開発ガイド — Z80移植方針・AILZ80ASM・機種別注意事項 |
+| `docs/ja/shin_psg_feel_engine.md` | 感情エンジン テクニカルドキュメント — Stage 1〜6の処理フロー・演奏癖パラメータ |
+| `docs/ja/shin_psg_architecture.md` | アーキテクチャドキュメント — 抽象化・継承・音源別実装 |
+| `docs/ja/shin_psg_roadmap.md` | 実装ロードマップ — Phase 1〜8・マイルストン・技術スタック候補 |
+| `docs/ja/shin_psg_glossary.md` | 用語辞典 — 日英対訳・定義一覧 |
+| `docs/ja/shin_psg_project_structure.md` | プロジェクト構造ガイド — ディレクトリ構成・ビルドシステム・ブランチ戦略 |
+| `docs/ja/shin_psg_retro_guide.md` | レトロプラットフォーム開発ガイド — Z80移植方針・AILZ80ASM・機種別注意事項 |
 
 ---
 

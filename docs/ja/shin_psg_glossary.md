@@ -1,4 +1,4 @@
-# シン・PSG 用語辞典 v0.1
+# シン・PSG 用語辞典 v0.2
 
 本辞典はシン・PSGプロジェクトにおいて使用される用語を体系的に定義する。
 日本語を一次言語とし、英語名を併記する。
@@ -10,6 +10,7 @@
 
 | バージョン | 内容 |
 |---|---|
+| v0.2 | レトロ・組み込み開発用語（チック、CTC、VDP、ベアメタル等）およびライセンス用語を追加。AILZ80ASM を外部ツール欄に追加。 |
 | v0.1 | 初版。仕様書・感情エンジン・アーキテクチャ・ロードマップ各ドキュメントから用語を網羅的に収録。 |
 
 ---
@@ -28,6 +29,8 @@
 10. [音源・チップ](#10-音源チップ)
 11. [ライブラリ・ツール](#11-ライブラリツール)
 12. [プロジェクト固有用語](#12-プロジェクト固有用語)
+13. [レトロ・組み込み開発用語](#13-レトロ組み込み開発用語)
+14. [ライセンス用語](#14-ライセンス用語)
 
 ---
 
@@ -266,6 +269,7 @@ MMLで明示した場合はMML指定が優先（上書き）される。
 | YouTube Live Streaming API | コメント・スーパーチャット取得 |
 | Streamlabs Socket API | YouTube/Twitch等のイベント統合取得 |
 | Social Stream Ninja | 複数プラットフォームのチャット統合 |
+| AILZ80ASM | Z80系アセンブラ（C#/.NET 8、MIT、自己完結バイナリ）。X1/MSX/PC-88向けアセンブル。出力形式：MZT・CMT（X1）、ROM・CAS（MSX） |
 
 ---
 
@@ -287,3 +291,31 @@ MMLで明示した場合はMML指定が優先（上書き）される。
 | サウンドドライバ抽象レイヤー | Sound Driver Abstraction Layer | 音源の種類に依存しない共通インターフェース。演者は抽象概念レベルの癖・感情パラメータを持つだけでよく、音源への具体的な実装は実行時に解決される。 |
 | PerformanceTrait | PerformanceTrait | 演奏癖の抽象クラス。ビブラート・トレモロ・ポルタメントがこれを継承する。 |
 | EmotionAlgorithm | EmotionAlgorithm | 感情アルゴリズムのインターフェース。演者ごとに実装が割り当てられる。 |
+
+---
+
+## 13. レトロ・組み込み開発用語
+
+| 日本語 | English | 定義 | 参照ドキュメント |
+|---|---|---|---|
+| チック | Tick | 割り込みドリブンの音楽ドライバにおける最小時間単位。割り込みが1回発生するごとに1カウントされる。テンポはチックレートに依存する。 | retro_guide |
+| チックレート | Tick Rate | 1秒間に発生するチックの数。機種ごとに異なる（X1: CTCで任意設定、MSX: VDP V-SYNCで60Hz固定）。MMLコンパイラがチックレートに合わせてウェイト値を変換する。 | retro_guide |
+| チック抽象化 | Tick Abstraction | 共通コードがチックレートを知らなくても動作できるよう、機種固有コードが `TICKS_PER_SEC` 定数を提供する設計パターン。 | retro_guide |
+| CTC | CTC / Counter Timer Circuit | Z80周辺回路のカウンタ・タイマーチップ。Sharp X1で使用し任意の周期で割り込みを発生させる。テンポ管理の自由度が高い。 | retro_guide |
+| VDP | VDP / Video Display Processor | MSXのビデオプロセッサ。V-SYNC時に割り込みを発生させる（NTSC: 60Hz、PAL: 50Hz）。MSXの音楽ドライバはこの割り込みに乗乗りする。 | retro_guide |
+| ベアメタル | Bare Metal | OSなしで直接ハードウェアを制御する実行環境。RPi（Raspberry Pi）ベアメタルターゲットが該当する。C/C++で実装。 | project_structure |
+| バンク切り替え | Bank Switching | Z80の64KBアドレス空間制限を超えるためにメモリ領域を動的に切り替える手法。 | retro_guide |
+
+---
+
+## 14. ライセンス用語
+
+| 日本語 | English | 定義 | 参照ドキュメント |
+|---|---|---|---|
+| GPL汚染 | GPL Contamination | GPLライセンスのコードをリンクすることで、プロジェクト全体にGPLの条件（ソースコード公開義務）が適用される問題。商用・クローズドソース開発では回避が必要。 | milestone-1-1-license-evaluation |
+| LGPL | LGPL / GNU Lesser General Public License | GPLより制限が緩い。スタティックリンクはGPL汚染となる可能性があるが、ダイナミックリンクは多くの場合許容される。 | milestone-1-1-license-evaluation |
+| スタティックリンク | Static Linking | ライブラリをバイナリに直接組み込むリンク方式。LGPLライブラリをスタティックリンクすると汚染リスクがある。 | milestone-1-1-license-evaluation |
+| ダイナミックリンク | Dynamic Linking | ライブラリを実行時に外部DLL/SOから読み込むリンク方式。LGPLライブラリではこの方式を用いることで汚染を回避できる場合が多い。 | milestone-1-1-license-evaluation |
+| 帰属表示 | Attribution Notice | BSDライセンス等で要求される著作権表示義務。NOTICE ファイルへの記載や About 画面での表示が一般的。 | milestone-1-1-license-evaluation |
+| BSD-3-Clause | BSD 3-Clause License | 「著作権表示の保持」「無保証の免責」「作者名の無断使用禁止」の3条件を持つ許可的ライセンス。GPL汚染なし。ymfmが採用。 | milestone-1-1-license-evaluation |
+| Unlicense / MIT-0 | Unlicense / MIT No Attribution | 実質的なパブリックドメイン相当のライセンス。帰属表示も不要。miniaudioが採用。 | milestone-1-1-license-evaluation |

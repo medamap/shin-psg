@@ -1,4 +1,4 @@
-# シン・PSG アーキテクチャドキュメント v0.1
+# シン・PSG アーキテクチャドキュメント v0.2
 
 ## 概要
 
@@ -227,6 +227,210 @@ MMLに記述がない場合は演者の癖パラメータが自動的に適用�
 
 ---
 
+---
+
+## ソフトウェアアーキテクチャ設計方針
+
+本章は実装フェーズに入る前に確定させたソフトウェアアーキテクチャ上の設計意思決定を記録する。
+**実装はこれらの設計を全ドメインで確定させてから開始する。**
+
+---
+
+### アーキテクチャスタイル：オニオンアーキテクチャ（DDD）
+
+シン・PSG は DDD（ドメイン駆動設計）のオニオンアーキテクチャを採用する。
+
+各ドメインは以下の4層で構成される。依存方向は常に外側から内側へ向かう。
+内側の層（Domain）は外側の層（Infrastructure）を一切知らない。
+
+```
+DomainName/
+  Presentation/   ← 画面表示・ユーザー入力（UIがないドメインでは空）
+  Application/    ← API エントリポイント・サービス起動処理
+  Infrastructure/ ← 具体的な実装（外部ライブラリとのアダプタ等）
+  Domain/         ← インターフェイス・モデル・Enum・ビジネスロジック（純粋抽象層）
+```
+
+依存関係のルール：
+
+```
+Presentation  → Application, Domain のみ参照可
+Application   → Domain のみ参照可
+Infrastructure → Domain のみ参照可
+Domain        → 他のいかなる層も参照しない（完全独立）
+```
+
+---
+
+### ドメイン分割
+
+シン・PSG を構成するドメインの暫定分割を以下に示す。
+実装フェーズ開始前に各ドメインの Domain 層（インターフェイス・モデル定義）を
+全て確定させてから実装に着手する。
+
+```
+shin-psg/
+  SoundSource/     ← 音源プラグインの抽象・ロード・管理
+  SoundEngine/     ← チック管理・ノートスケジューリング・演奏オーケストレーション
+  SoundOutput/     ← オーディオデバイス出力ブリッジ
+  Sequencer/       ← スコア/MML → ノートイベント変換（将来ドメイン）
+```
+
+各ドメインは他のドメインを直接参照しない。
+ドメイン間の依存が生じる場合は Domain 層のインターフェイス経由とする。
+
+---
+
+### 音源の完全抽象化方針
+
+**メソッド名・インターフェイスに音源種別（PSG/FM/PCM/BEEP 等）を一切含めない。**
+
+音源種別はプラグイン内部の実装詳細である。
+ホスト（SoundEngine 等）は「チャンネルに音を出す何か」としてのみ音源を扱う。
+
+```
+// NG: 音源種別がインターフェイスに漏れている
+note_on_psg(ch, pitch, volume)
+note_on_fm(ch, pitch, voice_id)
+
+// OK: 完全に抽象化されたインターフェイス
+note_on(ch, pitch, velocity)
+note_off(ch)
+generate(buffer, frames)
+```
+
+この設計により、PSG → FM → PCM への音源差し替えがホスト側のコード変更なしに実現できる。
+
+---
+
+### 音源プラグインアーキテクチャ
+
+音源は**自己記述型プラグイン**として実装する。
+プラグインをロードすると、その音源が必要とするすべての情報を
+ディスクリプタ（記述子）として取得できる。
+
+```
+ISoundSourceDescriptor {
+    name()              → 音源名（例: "YM2151 OPM"）
+    channel_count()     → 同時発音チャンネル数（例: 8）
+    capabilities()      → 対応機能フラグ（pan / pitch_bend / envelope 等）
+    voice_schema()      → 音色パラメータの定義一覧（名前・型・値域）
+    sample_rate_for(clock) → 指定クロックでの内部サンプルレート
+}
+```
+
+`voice_schema()` により、ホストは音色パラメータの意味を知らなくても
+音色定義の入出力・設定ファイル管理・UI生成を汎用的に扱える。
+PSG の音色パラメータと FM の4オペパラメータは構造が全く異なるが、
+それをホスト側が意識しなくてよい設計となる。
+
+プラグインが提供するランタイムインターフェイス：
+
+```
+ISoundSource {
+    descriptor()               → ISoundSourceDescriptor
+    initialize(clock, sr)      → void
+    load_voice(ch, IVoiceParam) → void
+    note_on(ch, pitch, vel)    → void
+    note_off(ch)               → void
+    set_pan(ch, pan)           → void    ← capabilities に pan がある場合のみ有効
+    generate(buffer, frames)   → void
+}
+```
+
+**プラグインと音源ドメインの関係**：
+
+各音源実装（ayumi/emu2149/OPN/OPM 等）は個別の `ISoundSource` 実装として
+SoundSource ドメインの Infrastructure 層に属する。
+新しい電子音楽音源はプラグインを追加するだけで対応でき、
+既存ドメインのコードは変更不要である。
+
+---
+
+### .so / .dll プラグインとC ABIブリッジ
+
+プラグインを共有ライブラリ（`.so` / `.dll`）として独立配布するため、
+**C ABIブリッジを Infrastructure の外側に薄く一枚置く**。
+
+C++ のvtableは ABI の互換性が保証されないため、
+共有ライブラリ境界には C リンケージの関数のみを公開する。
+
+```c
+// プラグイン .so / .dll が export する C ABI 関数群
+extern "C" {
+    // プラグイン生成・破棄
+    void* spsg_plugin_create(uint32_t clock, uint32_t sample_rate);
+    void  spsg_plugin_destroy(void* handle);
+
+    // ディスクリプタ取得
+    const char* spsg_get_name(void* handle);
+    uint32_t    spsg_get_channel_count(void* handle);
+    uint32_t    spsg_get_capabilities(void* handle);
+    uint32_t    spsg_get_sample_rate(void* handle);
+
+    // ランタイム操作
+    void  spsg_load_voice(void* handle, uint32_t ch, const void* voice_data, uint32_t size);
+    void  spsg_note_on(void* handle, uint32_t ch, uint8_t pitch, uint8_t velocity);
+    void  spsg_note_off(void* handle, uint32_t ch);
+    void  spsg_set_pan(void* handle, uint32_t ch, float pan);
+    void  spsg_generate(void* handle, int16_t* buffer, uint32_t frames);
+}
+```
+
+Application 層はこの C 関数群をラップする C++ アダプターを持ち、
+`dlopen` / `LoadLibrary` でプラグインを動的ロードする。
+これにより：
+
+- プラグイン内部は自由な C++ で記述できる
+- 共有ライブラリ境界の ABI は安定する
+- 同じ関数シグネチャを持つ別実装プラグインへの差し替えが可能
+- どんな電子音楽音源とでもリンクできる
+
+---
+
+### PSG エミュレータ採用方針
+
+Milestone 1-1（ライセンス評価）および Milestone 1-2（技術検証）の結果を踏まえ、
+PSG エミュレータは **ayumi と emu2149 の両方を採用**する。
+
+| ライブラリ | 用途 | 採用理由 |
+|---|---|---|
+| ayumi | ステレオパン対応が必要な演者チャンネル | チャンネル毎のステレオパン・DC フィルター API が仕様要件に直接合致 |
+| emu2149 | パン不要・高速処理優先の用途 | シンプルで軽量、高速バッチ処理・プレビュー生成向き |
+
+両ライブラリは MIT ライセンスで問題なし。
+どちらを使うかはプラグイン実装の判断とし、ホスト側は区別しない（完全抽象化）。
+
+FM エミュレータは ymfm（BSD-3-Clause）を採用。
+OPN（YM2203）および OPM（YM2151）を同一ライブラリで対応できることを
+Milestone 1-2 で確認済み。
+
+---
+
+### 実装フェーズへの移行条件
+
+以下がすべて完了した時点で実装フェーズに移行する。
+
+**1. 全ドメインの Domain 層設計完了**
+- 全インターフェイス・モデル・Enum・ビジネスロジックの定義
+- ドメイン間の依存関係・インターフェイス契約の確定
+
+**2. プラグイン仕様の確定**
+- `ISoundSourceDescriptor` の完全定義
+- `ISoundSource` C ABI の完全定義
+- `VoiceParam` スキーマ仕様の確定
+- 最初に実装するプラグインターゲットの決定
+
+**3. ドメイン間連携設計の完了**
+- SoundEngine ↔ SoundSource 連携フロー
+- SoundEngine ↔ SoundOutput 連携フロー
+- チック管理・ノートスケジューリング処理フロー
+
+実装はこれらの設計を先行させ、
+「コードを書く前に設計が完成している」状態を目指す。
+
+---
+
 ## ドキュメント間の関係
 
 ```
@@ -250,4 +454,5 @@ shin_psg_architecture.md（本ドキュメント）
 
 | バージョン | 内容 |
 |---|---|
+| v0.2 | ソフトウェアアーキテクチャ方針を追加。オニオンアーキテクチャ（DDD）・ドメイン分割・音源完全抽象化・自己記述型プラグイン・C ABIブリッジ・PSGエミュレータ採用方針（ayumi/emu2149 両採用）・実装移行条件を記録。 |
 | v0.1 | 初版。抽象化・継承・インターフェース・音源別実装マッピング・MML優先順位・演者定義ファイル構造を定義。 |

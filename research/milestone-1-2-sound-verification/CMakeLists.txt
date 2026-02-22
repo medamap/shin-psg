@@ -79,8 +79,20 @@ if(UNIX)
 endif()
 
 # -----------------------------------------------------------------------------
+# 検証プログラム: fm_ymfm_opm_test (YM2151 / X1 + FM board, X1turboZ, X68000)
+# -----------------------------------------------------------------------------
+add_executable(fm_ymfm_opm_test
+    src/fm_ymfm_opm_test.cpp
+)
+target_include_directories(fm_ymfm_opm_test PRIVATE ${COMMON_INCLUDE})
+target_link_libraries(fm_ymfm_opm_test PRIVATE ymfm)
+if(UNIX)
+    target_link_libraries(fm_ymfm_opm_test PRIVATE m)
+endif()
+
+# -----------------------------------------------------------------------------
 # ビルド情報を表示
 # -----------------------------------------------------------------------------
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Targets: psg_ayumi_test, psg_emu2149_test, fm_ymfm_test")
-message(STATUS "Outputs: output_ayumi.wav, output_emu2149.wav, output_ymfm_opn.wav")
+message(STATUS "Targets: psg_ayumi_test, psg_emu2149_test, fm_ymfm_test, fm_ymfm_opm_test")
+message(STATUS "Outputs: output_ayumi.wav, output_emu2149.wav, output_ymfm_opn.wav, output_ymfm_opm.wav")

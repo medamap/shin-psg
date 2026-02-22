@@ -10,3 +10,6 @@ libs/
 
 # 生成 WAV（大容量のため管理外・ローカルで再生すること）
 *.wav
+*.o
+fm_ymfm_test
+fm_ymfm_opm_test

@@ -1,4 +1,4 @@
-# シン・PSG 用語辞典 v0.2
+# シン・PSG 用語辞典 v0.3
 
 本辞典はシン・PSGプロジェクトにおいて使用される用語を体系的に定義する。
 日本語を一次言語とし、英語名を併記する。
@@ -10,6 +10,7 @@
 
 | バージョン | 内容 |
 |---|---|
+| v0.3 | ソフトウェアアーキテクチャ用語を新設（Section 15）。オニオンアーキテクチャ・DDD・ISoundSource・ISoundSourceDescriptor・VoiceSchema・C ABIブリッジ・自己記述型プラグイン・各ドメイン名を追加。 |
 | v0.2 | レトロ・組み込み開発用語（チック、CTC、VDP、ベアメタル等）およびライセンス用語を追加。AILZ80ASM を外部ツール欄に追加。 |
 | v0.1 | 初版。仕様書・感情エンジン・アーキテクチャ・ロードマップ各ドキュメントから用語を網羅的に収録。 |
 
@@ -31,6 +32,7 @@
 12. [プロジェクト固有用語](#12-プロジェクト固有用語)
 13. [レトロ・組み込み開発用語](#13-レトロ組み込み開発用語)
 14. [ライセンス用語](#14-ライセンス用語)
+15. [ソフトウェアアーキテクチャ用語](#15-ソフトウェアアーキテクチャ用語)
 
 ---
 
@@ -319,3 +321,26 @@ MMLで明示した場合はMML指定が優先（上書き）される。
 | 帰属表示 | Attribution Notice | BSDライセンス等で要求される著作権表示義務。NOTICE ファイルへの記載や About 画面での表示が一般的。 | milestone-1-1-license-evaluation |
 | BSD-3-Clause | BSD 3-Clause License | 「著作権表示の保持」「無保証の免責」「作者名の無断使用禁止」の3条件を持つ許可的ライセンス。GPL汚染なし。ymfmが採用。 | milestone-1-1-license-evaluation |
 | Unlicense / MIT-0 | Unlicense / MIT No Attribution | 実質的なパブリックドメイン相当のライセンス。帰属表示も不要。miniaudioが採用。 | milestone-1-1-license-evaluation |
+
+---
+
+## 15. ソフトウェアアーキテクチャ用語
+
+| 日本語 | English | 定義 | 参照ドキュメント |
+|---|---|---|---|
+| オニオンアーキテクチャ | Onion Architecture | DDD（ドメイン駆動設計）のアーキテクチャスタイル。Domain を中心に、Application・Infrastructure・Presentation が外側を囲む同心円状の層構造。依存方向は常に外側から内側へ向かい、内側の層は外側の層を知らない。 | architecture |
+| DDD / ドメイン駆動設計 | DDD / Domain-Driven Design | ソフトウェア設計手法。ビジネスロジックを中心に据え、ドメインモデルを基盤としてシステムを構成する。シン・PSGではオニオンアーキテクチャと組み合わせて採用。 | architecture |
+| Domain 層 | Domain Layer | オニオンアーキテクチャの最内層。インターフェイス・モデル・Enum・ビジネスロジックを置く純粋抽象層。外部ライブラリや他層への依存を持たない。 | architecture |
+| Application 層 | Application Layer | APIエントリポイント・サービス起動処理を置く層。Domain 層のみに依存する。 | architecture |
+| Infrastructure 層 | Infrastructure Layer | 具体的な実装（外部ライブラリとのアダプタ等）を置く層。Domain 層のみに依存する。 | architecture |
+| Presentation 層 | Presentation Layer | 画面表示・ユーザー入力を扱う層。UIのないドメインでは空になる。 | architecture |
+| SoundSource ドメイン | SoundSource Domain | 音源プラグインの抽象・ロード・管理を担うドメイン。ISoundSource・ISoundSourceDescriptor が中心。 | architecture |
+| SoundEngine ドメイン | SoundEngine Domain | チック管理・ノートスケジューリング・演奏オーケストレーションを担うドメイン。 | architecture |
+| SoundOutput ドメイン | SoundOutput Domain | オーディオデバイス出力ブリッジを担うドメイン。miniaudio 等の音声出力ライブラリをラップする。 | architecture |
+| Sequencer ドメイン | Sequencer Domain | スコア/MML → ノートイベント変換を担う将来ドメイン。 | architecture |
+| ISoundSource | ISoundSource | 音源プラグインのランタイムインターフェイス。note_on / note_off / generate 等の完全抽象化されたメソッドを定義する。メソッド名に音源種別（PSG/FM/PCM 等）を含まない。 | architecture |
+| ISoundSourceDescriptor | ISoundSourceDescriptor | 音源プラグインのメタ情報インターフェイス。name / channel_count / capabilities / voice_schema / sample_rate_for を提供する自己記述型の記述子。 | architecture |
+| 自己記述型プラグイン | Self-describing Plugin | ロード時にディスクリプタを提供することで、ホストが音源の内部仕様を知らなくても汎用的に扱える設計のプラグイン形式。 | architecture |
+| VoiceSchema / voice_schema | VoiceSchema | 音色パラメータの定義一覧。パラメータ名・型・値域をプラグインが宣言する。PSG と FM で構造が全く異なる音色パラメータをホストが汎用的に扱うための仕組み。 | architecture |
+| capabilities | Capabilities | 音源プラグインが対応する機能のフラグ集合。pan / pitch_bend / envelope 等。ISoundSourceDescriptor で提供される。 | architecture |
+| C ABIブリッジ | C ABI Bridge | C++ の vtable は共有ライブラリ境界で ABI 互換性が保証されないため、プラグインの公開インターフェイスを extern "C" の C リンケージ関数群で定義するブリッジ層。.so/.dll の安定した ABI を実現する。 | architecture |

@@ -1,4 +1,4 @@
-# Shin-PSG Glossary v0.2
+# Shin-PSG Glossary v0.3
 
 This glossary systematically defines terms used in the Shin-PSG project.
 Japanese is the primary language; English names are listed alongside.
@@ -10,6 +10,7 @@ Its purpose is to ensure consistency of terminology across translations, documen
 
 | Version | Notes |
 |---|---|
+| v0.3 | Added Section 15: Software Architecture Terms. New entries: Onion Architecture, DDD, ISoundSource, ISoundSourceDescriptor, VoiceSchema, C ABI Bridge, Self-describing Plugin, and each domain name. |
 | v0.2 | Added retro and embedded development terms (Tick, CTC, VDP, Bare Metal, etc.) and license terms. Added AILZ80ASM to external tools. |
 | v0.1 | Initial version. Comprehensively collected terms from the specification, Feel Engine, architecture, and roadmap documents. |
 
@@ -31,6 +32,7 @@ Its purpose is to ensure consistency of terminology across translations, documen
 12. [Project-Specific Terms](#12-project-specific-terms)
 13. [Retro and Embedded Development Terms](#13-retro-and-embedded-development-terms)
 14. [License Terms](#14-license-terms)
+15. [Software Architecture Terms](#15-software-architecture-terms)
 
 ---
 
@@ -319,3 +321,26 @@ The topology definition of modulation relationships between emotions. Equivalent
 | 帰属表示 | Attribution Notice | The copyright notice obligation required by BSD licenses, etc. Typically recorded in a NOTICE file or displayed in an About screen. | milestone-1-1-license-evaluation |
 | BSD-3-Clause | BSD 3-Clause License | A permissive license with three conditions: "retain copyright notice," "no warranty disclaimer," and "no unauthorized use of author name." No GPL Contamination. Adopted by ymfm. | milestone-1-1-license-evaluation |
 | Unlicense / MIT-0 | Unlicense / MIT No Attribution | Effectively equivalent to public domain. No attribution required. Adopted by miniaudio. | milestone-1-1-license-evaluation |
+
+---
+
+## 15. Software Architecture Terms
+
+| Japanese | English | Definition | Reference Documents |
+|---|---|---|---|
+| オニオンアーキテクチャ | Onion Architecture | A DDD architecture style. The Domain sits at the center, surrounded by concentric layers: Application, Infrastructure, and Presentation. Dependencies always flow inward; inner layers have no knowledge of outer layers. | architecture |
+| DDD / ドメイン駆動設計 | DDD / Domain-Driven Design | A software design methodology that places business logic at the center and structures the system around a domain model. Shin-PSG adopts this in combination with Onion Architecture. | architecture |
+| Domain 層 | Domain Layer | The innermost layer of Onion Architecture. Holds interfaces, models, enums, and business logic as a pure abstraction layer with no dependencies on external libraries or other layers. | architecture |
+| Application 層 | Application Layer | The layer holding API entry points and service startup logic. May only depend on the Domain layer. | architecture |
+| Infrastructure 層 | Infrastructure Layer | The layer holding concrete implementations (adapters for external libraries, etc.). May only depend on the Domain layer. | architecture |
+| Presentation 層 | Presentation Layer | The layer handling UI display and user input. Empty for domains that have no UI. | architecture |
+| SoundSource ドメイン | SoundSource Domain | The domain responsible for sound source plugin abstraction, loading, and management. Centers on ISoundSource and ISoundSourceDescriptor. | architecture |
+| SoundEngine ドメイン | SoundEngine Domain | The domain responsible for tick management, note scheduling, and performance orchestration. | architecture |
+| SoundOutput ドメイン | SoundOutput Domain | The domain responsible for the audio device output bridge, wrapping audio output libraries such as miniaudio. | architecture |
+| Sequencer ドメイン | Sequencer Domain | A future domain responsible for converting scores/MML into note events. | architecture |
+| ISoundSource | ISoundSource | The runtime interface for a sound source plugin. Defines fully abstracted methods such as note_on, note_off, and generate. Method names contain no sound source type identifiers (PSG, FM, PCM, etc.). | architecture |
+| ISoundSourceDescriptor | ISoundSourceDescriptor | The metadata interface for a sound source plugin. Provides name, channel_count, capabilities, voice_schema, and sample_rate_for as a self-describing descriptor. | architecture |
+| 自己記述型プラグイン | Self-describing Plugin | A plugin design where the plugin provides a descriptor upon loading, enabling the host to handle it generically without knowledge of the sound source's internal specification. | architecture |
+| VoiceSchema / voice_schema | VoiceSchema | A list of voice parameter definitions declared by a plugin, including parameter names, types, and value ranges. Enables the host to handle voice parameters from structurally different sound sources (PSG, FM, etc.) in a uniform way. | architecture |
+| capabilities | Capabilities | A set of feature flags indicating what a sound source plugin supports (pan, pitch_bend, envelope, etc.). Provided via ISoundSourceDescriptor. | architecture |
+| C ABIブリッジ | C ABI Bridge | A bridge layer that defines a plugin's public interface as C-linkage (extern "C") functions, since C++ vtables provide no guaranteed ABI compatibility across shared library boundaries. Enables stable .so/.dll ABI. | architecture |

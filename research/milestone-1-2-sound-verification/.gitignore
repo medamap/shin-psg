@@ -1,0 +1,12 @@
+# ビルド成果物
+build/
+
+# libs/ は git clone で取得するので管理外
+# libs/ayumi/  → https://github.com/true-grue/ayumi.git
+# libs/emu2149/ → https://github.com/digital-sound-antiques/emu2149.git
+# libs/ymfm/   → https://github.com/aaronsgiles/ymfm.git
+# libs/miniaudio.h → https://github.com/mackron/miniaudio (master)
+libs/
+
+# 生成 WAV（大容量のため管理外・ローカルで再生すること）
+*.wav
